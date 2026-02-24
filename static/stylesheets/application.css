@@ -1,0 +1,260 @@
+body {
+  padding: 1em;
+  font-family: sans-serif;
+}
+
+header {
+  font-size: 50px;
+}
+
+#card-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.card {
+  height: 125px;
+  width: 400px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.1);
+}
+
+.card-front, .card-back {
+    padding: 30px;
+}
+
+.button {
+  -webkit-appearance: button;
+  -moz-appearance: button;
+  border: 2px outset ButtonBorder;
+  padding: 2px 6px;
+  font: menu;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  user-select: none;
+  display: block;
+  margin-top: 10px;
+  color: black;
+  background-color: lightgray;
+  float: right;
+}
+
+.cancel-button {
+  display: inline-block;
+  margin-top: 10px;
+  color: black;
+  background-color: lightgray;
+  cursor: pointer;
+}
+
+input[type="submit"] {
+  display: inline-block;
+  margin-top: 10px;
+  color: black;
+  background-color: lightgray;
+  cursor: pointer;
+}
+
+.flash {
+  max-width: 960px;
+  padding: 10px 20px;
+  margin: 20px auto 1.5em auto;
+  color: #3399cc;
+  background: #CBE5F2;
+}
+
+.flash p {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.flash.error {
+  color: #ff6633;
+  background: #FFCFBF;
+}
+
+.flash.success {
+  color: #33cc99;
+  background: #CBF2E5;
+}
+
+#decks {
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+#decks li {
+  position: relative;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  background: #e0e0e0;
+  list-style: none;
+  flex: 0 1 auto;
+  white-space: nowrap;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 24px;
+}
+
+#decks li a {
+  color: #000;
+  display: block;
+  padding: 18px clamp(10px, 5vw, 25px) 18px clamp(2px, 5vw, 57px);
+  text-decoration: none;
+  font-size: clamp(6px, 4vw, 40px);
+  font-weight: bold;
+  width: max-content;
+  max-width: 100%;
+}
+
+#decks li > a:first-child {
+  flex-grow: 1;
+  overflow-x: auto;
+  background-color: #c0c0c0;
+  border-radius: 0.25em;
+}
+
+.edit::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  background: url('/static/images/icon_edit.png') no-repeat center center;
+  background-size: contain;
+  vertical-align: middle;
+}
+
+#decks li form.delete button.delete::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  background: url('/static/images/icon_delete.png') no-repeat center center;
+  background-size: contain;
+  vertical-align: middle;
+}
+
+#decks li a.edit,
+#decks li form.delete button.delete {
+  color: #000;
+  background: none;
+  border: none;
+  padding: 18px clamp(10px, 5vw, 25px) 18px clamp(2px, 5vw, 57px);
+  font-size: clamp(6px, 4vw, 40px);
+  font-weight: bold;
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.button-group {
+  float: right;
+  display: flex;
+  gap: 5px;
+}
+
+.study-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 58px);
+  gap: 20px;
+}
+
+.card-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  align-items: center;
+}
+
+.study-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #fff;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  width: 500px;
+  height: 300px;
+  font-size: 1.4em;
+  text-align: center;
+  padding: 20px;
+}
+
+
+.nav-button {
+  padding: 10px 16px;
+  background-color: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+.nav-button:hover {
+  background-color: #0056b3;
+}
+
+.flip-card a {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #28a745;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  margin-top: 20px;
+}
+
+.flip-card a:hover {
+    background-color: #1e7e34;
+}
+
+.nav-button.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.end-button {
+  display: inline-block;
+  margin-bottom: 20px;
+  padding: 8px 16px;
+  background-color: #dc3545;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+.end-button:hover {
+  background-color: #a71d2a;
+}
+
+.delete-card {
+  width: 24px;
+  height: 24px;
+  background: url('/static/images/icon_delete.png') no-repeat center center;
+  background-size: contain;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 20px;
+  float: right;
+}

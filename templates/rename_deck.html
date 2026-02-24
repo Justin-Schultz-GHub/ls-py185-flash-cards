@@ -1,0 +1,12 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+    <h2>Renaming {{ deck.name }}:</h2>
+    <form method='POST' action="{{ url_for('save_deck', deck_folder=deck_folder) }}">
+        Enter new deck name: <input type="text" name="deckname" value="{{ deck.name }}">
+        <div>
+            <input type="submit" value="Save"/>
+            <button type="button" class="cancel-button" onclick="window.location='{{ url_for('index') }}'">Cancel</button>
+        </div>
+    </form>
+{% endblock %}

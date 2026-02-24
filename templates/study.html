@@ -1,0 +1,19 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+    <div class="study-container">
+        <div class="end-study">
+            <a href="{{ url_for('end_study', deck_folder=deck_folder) }}" class="end-button">End Study</a>
+        </div>
+
+        <div class="card-row">
+            <a href="{{ url_for('previous_card', deck_folder=deck_folder) }}" class="nav-button {% if study_index == 0 %}disabled{% endif %}">Previous</a>
+            <div class="study-card">{{ card[side] }}</div>
+            <a href="{{ url_for('next_card', deck_folder=deck_folder) }}" class="nav-button {% if study_index == cards|length - 1 %}disabled{% endif %}">Next</a>
+        </div>
+
+        <div class="flip-card">
+            <a href="{{ url_for('flip_card', deck_folder=deck_folder) }}">Flip</a>
+        </div>
+    </div>
+{% endblock %}

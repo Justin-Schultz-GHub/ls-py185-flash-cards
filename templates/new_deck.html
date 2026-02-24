@@ -1,0 +1,13 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+    <h2>Create a New Deck</h2>
+    <form method='POST' action="{{ url_for('create_deck') }}">
+        Deck Name: <input type="text" name="deckname" value="{{ deckname or '' }}"/>
+        <div>
+            <input type="submit" value="Submit"/>
+            <button type="button" class="cancel-button" onclick="window.location='{{ url_for('index') }}'">Cancel</button>
+        </div>
+    </form>
+
+{% endblock %}

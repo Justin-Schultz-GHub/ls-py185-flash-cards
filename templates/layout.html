@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en-US"
+    <head>
+        <title>Justin's Flash Card App</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/application.css') }}">
+        <script src="{{ url_for('static', filename='javascripts/application.js') }}"></script>
+    </head>
+    <body>
+        <header>Justin's Flash Card App</header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class='flash {{ category }}'>
+                        <p>{{ message }}</p>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <main>
+            {% block content %}
+            <!-- Filled in by the `content` block from another template file -->
+            {% endblock %}
+        </main>
+    </body>

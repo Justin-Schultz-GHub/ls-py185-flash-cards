@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+    <h2>Create a New Flashcard:</h2>
+    <form method="post" action="{{ url_for('create_card', deck_folder=deck_folder) }}">
+        <div>
+            Front: <input type="text" name="front"/>
+            Back: <input type="text" name="back"/>
+            <div>
+                <input type="submit" value="Submit"/>
+                <button type="button" class="cancel-button" onclick="window.location='{{ url_for('display_deck', deck_folder=deck_folder) }}'">Cancel</button>
+            </div>
+        </div>
+    </form>
+{% endblock %}
