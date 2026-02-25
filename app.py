@@ -1,5 +1,6 @@
 import os
 import re
+import secrets
 from flask import (
                     flash,
                     Flask,
@@ -9,56 +10,32 @@ from flask import (
                     send_from_directory,
                     session,
                     url_for,
+                    g,
                     )
+
+from flashcards.utils import (
+                            deck_exists,
+                            get_yaml_path,
+                            get_deck_path,
+                            get_data_dir,
+                            generate_next_folder_name,
+                            generate_card_id,
+                            )
+
 import string
 import shutil
 import yaml
-import random
+
+from flashcards.session_persistence import (
+                                            SessionPersistence,
+                                            )
 
 app = Flask(__name__)
-app.secret_key='secret1'
+app.secret_key=secrets.token_hex(32)
 
-# Helper functions
-def get_data_dir():
-    subdir = 'tests/data' if app.config['TESTING'] else 'flashcards/data'
-    return os.path.join(os.path.dirname(__file__), subdir)
-
-def deck_exists(path):
-    return os.path.exists(path)
-
-def get_deck_path(deck_folder):
-    return os.path.join(get_data_dir(), deck_folder)
-
-def get_yaml_path(deck_folder):
-    deck_path = get_deck_path(deck_folder)
-
-    return os.path.join(deck_path, 'cards.yml')
-
-def generate_next_folder_name():
-    existing = os.listdir(get_data_dir())
-    pattern = re.compile(r'^deck(\d+)$')
-    numbers = []
-
-    for name in existing:
-        match = pattern.match(name)
-        if match:
-            numbers.append(int(match.group(1)))
-
-    next_number = max(numbers) + 1 if numbers else 1
-    return f'deck{next_number}'
-
-def generate_card_id(deck_folder):
-    yaml_path = get_yaml_path(deck_folder)
-
-    with open(yaml_path, 'r', encoding='utf-8') as f:
-        deck_data = yaml.safe_load(f)
-
-    existing_ids = set()
-
-    for card in deck_data['cards']:
-        existing_ids.add(int(card.get('id', 1)))
-
-    return max(existing_ids) + 1 if existing_ids else 1
+@app.before_request
+def initialize_session():
+    g.storage = SessionPersistence(session)
 
 # Route hooks
 @app.route('/')
@@ -207,26 +184,16 @@ def delete_card(deck_folder, card_id):
 
 @app.route('/decks/<deck_folder>/study')
 def study_cards(deck_folder):
-    if 'study' not in session or session['study'].get('deck') != deck_folder or not session['study'].get('cards'):
-        yaml_path = get_yaml_path(deck_folder)
+    yaml_path = get_yaml_path(deck_folder)
 
-        with open(yaml_path, 'r', encoding='utf-8') as file:
-            deck_data = yaml.safe_load(file)
+    with open(yaml_path, 'r', encoding='utf-8') as file:
+        deck_data = yaml.safe_load(file)
 
-        if not deck_data.get('cards'):
-            flash('This deck has no cards to study!', 'error')
-            return redirect(url_for('display_deck', deck_folder=deck_folder))
+    if not deck_data.get('cards'):
+        flash('This deck has no cards to study!', 'error')
+        return redirect(url_for('display_deck', deck_folder=deck_folder))
 
-        random.shuffle(deck_data['cards'])
-
-        session['study'] = {
-            'deck': deck_folder,
-            'cards': deck_data['cards'],
-            'index': 0,
-            'side': 'front'
-        }
-
-    study = session['study']
+    study = g.storage.start_study(deck_folder, deck_data['cards'])
     card = study['cards'][study['index']]
     side = study['side']
 
@@ -235,43 +202,31 @@ def study_cards(deck_folder):
                         card=card,
                         side=side,
                         deck_folder=deck_folder,
-                        study_index = session['study']['index'],
-                        cards = session['study']['cards']
+                        study_index = study['index'],
+                        cards = study['cards']
                         )
 
 @app.route('/decks/<deck_folder>/study/flip')
 def flip_card(deck_folder):
-    if 'study' in session and session['study'].get('deck') == deck_folder:
-        session['study']['side'] = 'back' if session['study']['side'] == 'front' else 'front'
-        session.modified = True
-
-    return redirect(url_for('study_cards', deck_folder=deck_folder))
-
-@app.route('/decks/<deck_folder>/study/previous')
-def previous_card(deck_folder):
-    if 'study' in session and session['study'].get('deck') == deck_folder:
-        if session['study']['index'] > 0:
-            session['study']['index'] -= 1
-
-        session['study']['side'] = 'front'
-        session.modified = True
+    g.storage.flip_card(deck_folder)
 
     return redirect(url_for('study_cards', deck_folder=deck_folder))
 
 @app.route('/decks/<deck_folder>/study/next')
 def next_card(deck_folder):
-    if 'study' in session and session['study'].get('deck') == deck_folder:
-        if session['study']['index'] < len(session['study']['cards']):
-            session['study']['index'] += 1
+    g.storage.next_card(deck_folder)
 
-        session['study']['side'] = 'front'
-        session.modified = True
+    return redirect(url_for('study_cards', deck_folder=deck_folder))
+
+@app.route('/decks/<deck_folder>/study/previous')
+def previous_card(deck_folder):
+    g.storage.previous_card(deck_folder)
 
     return redirect(url_for('study_cards', deck_folder=deck_folder))
 
 @app.route('/decks/<deck_folder>/study/end')
 def end_study(deck_folder):
-    session.pop('study', None)
+    g.storage.end_study(deck_folder)
 
     return redirect(url_for('display_deck', deck_folder=deck_folder))
 
