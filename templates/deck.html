@@ -2,17 +2,17 @@
 
 {% block content %}
     <div class="button-group">
-        <a href="{{ url_for('new_card', deck_folder=deck_folder) }}" class="button">New Card</a>
-        <a href="{{ url_for('study_cards', deck_folder=deck_folder) }}" class="button">Study</a>
+        <a href="{{ url_for('new_card', deck_id=deck_id) }}" class="button">New Card</a>
+        <a href="{{ url_for('study_cards', deck_id=deck_id) }}" class="button">Study</a>
         <a href="{{ url_for('index') }}" class="button">View All Decks</a>
     </div>
-    <h2 id=deck-list-title>{{ deck_title | title }} Card List:</h2>
+    <h2 id=deck-list-title>{{ deck_name | title }} Card List:</h2>
     <ul id='card-list'>
         {% for card in cards %}
             <li class="card">
                 <div class="card-front">{{ card.front | capitalize }}</div>
                 <div class="card-back">{{ card.back | capitalize }}</div>
-                <form action="{{ url_for('delete_card', deck_folder=deck_folder, card_id=card.id) }}" method="post">
+                <form action="{{ url_for('delete_card', deck_id=deck_id, card_id=card.id) }}" method="post">
                     <button type="submit" class="delete-card"></button>
                 </form>
             </li>

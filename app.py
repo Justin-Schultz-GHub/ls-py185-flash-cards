@@ -8,7 +8,7 @@ from flask import (
                     redirect,
                     request,
                     send_from_directory,
-                    session,
+                    # session,
                     url_for,
                     g,
                     )
@@ -26,45 +26,31 @@ import string
 import shutil
 import yaml
 
-from flashcards.session_persistence import (
-                                            SessionPersistence,
+from flashcards.database_persistence import (
+                                            DatabasePersistence,
                                             )
 
 app = Flask(__name__)
 app.secret_key=secrets.token_hex(32)
 
 @app.before_request
-def initialize_session():
-    g.storage = SessionPersistence(session)
+def initialize_database():
+    g.storage = DatabasePersistence()
 
 # Route hooks
 @app.route('/')
 def index():
-    data_dir = get_data_dir()
-    folders = os.listdir(data_dir)
-    decks = []
-
-    for folder in folders:
-        yaml_path = os.path.join(data_dir, folder, 'cards.yml')
-        with open(yaml_path, 'r', encoding='utf-8') as file:
-            deck_data = yaml.safe_load(file)
-
-        deck_name = deck_data.get('name', folder)
-        decks.append({'folder': folder, 'name': deck_name})
+    decks = g.storage.get_all_decks()
 
     return render_template('flashcards.html', decks=decks)
 
-@app.route('/deck/<deck_folder>')
-def display_deck(deck_folder):
-    yaml_path = get_yaml_path(deck_folder)
+@app.route('/deck/<int:deck_id>')
+def display_deck(deck_id):
+    deck = g.storage.get_deck(deck_id)
+    deck_name = deck[0]['name']
+    cards = g.storage.get_cards(deck_id)
 
-    with open(yaml_path, 'r', encoding='utf-8') as f:
-        deck_data = yaml.safe_load(f)
-
-    cards = deck_data.get('cards', [])
-    deck_title = deck_data.get('name', deck_folder)
-
-    return render_template('deck.html', cards=cards, deck_title=deck_title, deck_folder=deck_folder)
+    return render_template('deck.html', cards=cards, deck_name=deck_name, deck_id=deck_id)
 
 @app.route('/new')
 def new_deck():
@@ -78,23 +64,12 @@ def create_deck():
         flash('Deck name cannot be empty.', 'error')
         return redirect(url_for('new_deck'))
 
-    deck_folder = generate_next_folder_name()
-    deck_path = get_deck_path(deck_folder)
-    yaml_path = get_yaml_path(deck_folder)
-    os.makedirs(deck_path, exist_ok=False)
-
-    deck_data = {
-            'name': deckname,
-            'cards': []
-        }
-
-    with open(yaml_path, 'w', encoding='utf-8') as file:
-        yaml.dump(deck_data, file, allow_unicode=True, default_flow_style=False, sort_keys=False)
+    g.storage.create_deck(deckname)
 
     flash(f'Successfully created {deckname}.', 'success')
     return redirect(url_for('index'))
 
-@app.route('/decks/<deck_folder>/rename')
+@app.route('/decks/<int:deck_id>/rename')
 def rename_deck(deck_folder):
     yaml_path = get_yaml_path(deck_folder)
 
@@ -103,7 +78,7 @@ def rename_deck(deck_folder):
 
     return render_template('rename_deck.html', deck=deck_data, deck_folder=deck_folder)
 
-@app.route('/decks/<deck_folder>', methods=['POST'])
+@app.route('/decks/<int:deck_id>', methods=['POST'])
 def save_deck(deck_folder):
     yaml_path = get_yaml_path(deck_folder)
 
@@ -124,7 +99,7 @@ def save_deck(deck_folder):
     flash(f'Deck successfully renamed.', 'success')
     return redirect(url_for('index'))
 
-@app.route('/decks/<deck_folder>/delete', methods=['POST'])
+@app.route('/decks/<int:deck_id>/delete', methods=['POST'])
 def delete_deck(deck_folder):
     folders = os.listdir(get_data_dir())
 
@@ -138,12 +113,12 @@ def delete_deck(deck_folder):
     flash('Failed to delete deck.', 'error')
     return redirect(url_for('index'))
 
-@app.route('/decks/<deck_folder>/new_card')
-def new_card(deck_folder):
-    return render_template('create_flashcard.html', deck_folder=deck_folder)
+@app.route('/decks/<int:deck_id>/new_card')
+def new_card(deck_id):
+    return render_template('create_flashcard.html', deck_id=deck_id)
 
-@app.route('/decks/<deck_folder>/new_card/create', methods=['POST'])
-def create_card(deck_folder):
+@app.route('/decks/<int:deck_id>/new_card/create', methods=['POST'])
+def create_card(deck_id):
     yaml_path = get_yaml_path(deck_folder)
 
     with open(yaml_path, 'r', encoding='utf-8') as file:
@@ -162,7 +137,7 @@ def create_card(deck_folder):
         yaml.dump(deck_data, file, allow_unicode=True, default_flow_style=False, sort_keys=False)
 
     flash('Successfully created new card.', 'success')
-    return redirect(url_for('display_deck', deck_folder=deck_folder))
+    return redirect(url_for('display_deck', deck_id=deck_id))
 
 @app.route('/decks/<deck_folder>/<card_id>/delete', methods=['POST'])
 def delete_card(deck_folder, card_id):
@@ -182,18 +157,18 @@ def delete_card(deck_folder, card_id):
     flash('Successfully deleted card.', 'success')
     return redirect(url_for('display_deck', deck_folder=deck_folder))
 
-@app.route('/decks/<deck_folder>/study')
-def study_cards(deck_folder):
-    yaml_path = get_yaml_path(deck_folder)
+@app.route('/decks/<int:deck_id>/study')
+def study_cards(deck_id):
+    yaml_path = get_yaml_path(deck_id)
 
     with open(yaml_path, 'r', encoding='utf-8') as file:
         deck_data = yaml.safe_load(file)
 
     if not deck_data.get('cards'):
         flash('This deck has no cards to study!', 'error')
-        return redirect(url_for('display_deck', deck_folder=deck_folder))
+        return redirect(url_for('display_deck', deck_id=deck_id))
 
-    study = g.storage.start_study(deck_folder, deck_data['cards'])
+    study = g.storage.start_study(deck_id, deck_data['cards'])
     card = study['cards'][study['index']]
     side = study['side']
 
@@ -201,7 +176,7 @@ def study_cards(deck_folder):
                         'study.html',
                         card=card,
                         side=side,
-                        deck_folder=deck_folder,
+                        deck_id=deck_id,
                         study_index = study['index'],
                         cards = study['cards']
                         )

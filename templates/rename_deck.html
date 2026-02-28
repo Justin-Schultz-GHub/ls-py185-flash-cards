@@ -2,7 +2,7 @@
 
 {% block content %}
     <h2>Renaming {{ deck.name }}:</h2>
-    <form method='POST' action="{{ url_for('save_deck', deck_folder=deck_folder) }}">
+    <form method='POST' action="{{ url_for('save_deck', deck_id=deck_id) }}">
         Enter new deck name: <input type="text" name="deckname" value="{{ deck.name }}">
         <div>
             <input type="submit" value="Save"/>
