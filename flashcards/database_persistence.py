@@ -1,5 +1,4 @@
 import os
-import random
 from contextlib import contextmanager
 import psycopg2
 from psycopg2.extras import DictCursor
@@ -41,7 +40,6 @@ class DatabasePersistence:
                 cursor.execute(query, (name,))
                 deck_id = cursor.fetchone()[0]
 
-        print(deck_id)
         return deck_id
 
     def get_all_decks(self):
@@ -75,6 +73,20 @@ class DatabasePersistence:
 
         return(deck)
 
+    def create_card(self, front, back, deck_id):
+        query = '''
+                INSERT INTO cards (front, back, deck_id)
+                values (%s, %s, %s)
+                '''
+
+        with self._database_connect() as connection:
+            with connection.cursor() as cursor:
+                logger.info(
+                        'Executing query: %s with deck_id: %s',
+                        query, deck_id
+                        )
+                cursor.execute(query, (front, back, deck_id,))
+
     def get_cards(self, deck_id):
         query = '''
                 SELECT id, front, back FROM cards
@@ -91,17 +103,16 @@ class DatabasePersistence:
 
         return(cards)
 
-    def start_study(self, deck_folder, cards):
-        pass
+    def delete_card(self, deck_id, card_id):
+        query = '''
+                DELETE FROM cards
+                WHERE id = %s and deck_id = %s;
+                '''
 
-    def flip_card(self, deck_folder):
-        pass
-
-    def next_card(self, deck_folder):
-        pass
-
-    def previous_card(self, deck_folder):
-        pass
-
-    def end_study(self, deck_folder):
-        pass
+        with self._database_connect() as connection:
+            with connection.cursor() as cursor:
+                logger.info(
+                        'Executing query: %s with deck_id: %s and card_id %s',
+                        query, deck_id, card_id
+                        )
+                cursor.execute(query, (card_id, deck_id,))
