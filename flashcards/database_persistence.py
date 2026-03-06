@@ -10,7 +10,46 @@ logger = logging.getLogger(__name__)
 
 class DatabasePersistence:
     def __init__(self):
-        pass
+        self._setup_schema()
+
+    def _setup_schema(self):
+        with self._database_connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute('''
+                                SELECT COUNT(*)
+                                FROM information_schema.tables
+                                WHERE table_schema = 'public'
+                                    and table_name = 'decks';
+                                ''')
+                if cursor.fetchone()[0] == 0:
+                    cursor.execute('''
+                                    CREATE TABLE decks (
+                                    id serial PRIMARY KEY,
+                                    name TEXT NOT NULL
+                                    );
+                                ''')
+
+                cursor.execute('''
+                                SELECT COUNT(*)
+                                FROM information_schema.tables
+                                WHERE table_schema = 'public'
+                                    and table_name = 'cards';
+                            ''')
+
+                if cursor.fetchone()[0] == 0:
+                    cursor.execute('''
+                                    CREATE TABLE cards (
+                                    id serial PRIMARY KEY,
+                                    front TEXT NOT NULL,
+                                    back TEXT NOT NULL,
+                                    deck_id INTEGER NOT NULL REFERENCES decks(id) ON DELETE CASCADE
+                                    );
+                                ''')
+
+                cursor.execute('''
+                                CREATE INDEX IF NOT EXISTS idx_cards_deck_id
+                                ON cards(deck_id);
+                            ''')
 
     @contextmanager
     def _database_connect(self):
