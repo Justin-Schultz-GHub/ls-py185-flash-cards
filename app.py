@@ -1,31 +1,15 @@
 import os
-import re
 import secrets
-import random
 from flask import (
                     flash,
                     Flask,
                     render_template,
                     redirect,
                     request,
-                    send_from_directory,
                     session,
                     url_for,
                     g,
                     )
-
-from flashcards.utils import (
-                            deck_exists,
-                            get_yaml_path,
-                            get_deck_path,
-                            get_data_dir,
-                            generate_next_folder_name,
-                            generate_card_id,
-                            )
-
-import string
-import shutil
-import yaml
 
 from flashcards.database_persistence import (
                                             DatabasePersistence,
@@ -76,47 +60,33 @@ def create_deck():
     return redirect(url_for('index'))
 
 @app.route('/decks/<int:deck_id>/rename')
-def rename_deck(deck_folder):
-    yaml_path = get_yaml_path(deck_folder)
+def rename_deck(deck_id):
+    deck_name = g.storage.get_deck(deck_id)[0]['name']
 
-    with open(yaml_path, 'r', encoding='utf-8') as file:
-        deck_data = yaml.safe_load(file)
+    return render_template('rename_deck.html', deck_name=deck_name, deck_id=deck_id)
 
-    return render_template('rename_deck.html', deck=deck_data, deck_folder=deck_folder)
-
-@app.route('/decks/<int:deck_id>', methods=['POST'])
-def save_deck(deck_folder):
-    yaml_path = get_yaml_path(deck_folder)
-
-    with open(yaml_path, 'r', encoding='utf-8') as file:
-        deck_data = yaml.safe_load(file)
-
+@app.route('/decks/<int:deck_id>/rename', methods=['POST'])
+def save_deck(deck_id):
     new_deck_name = request.form['deckname']
 
     if not new_deck_name:
         flash('Deck name cannot be empty.', 'error')
-        return redirect(url_for('rename_deck', deck_folder=deck_folder))
+        return redirect(url_for('rename_deck', deck_id=deck_id))
 
-    deck_data['name'] = new_deck_name
-
-    with open(yaml_path, 'w', encoding='utf-8') as file:
-        yaml.dump(deck_data, file, allow_unicode=True, default_flow_style=False, sort_keys=False)
+    if not g.storage.rename_deck(deck_id, new_deck_name):
+        flash('Deck not found.', 'error')
+        return redirect(url_for('rename_deck', deck_id=deck_id))
 
     flash(f'Deck successfully renamed.', 'success')
     return redirect(url_for('index'))
 
 @app.route('/decks/<int:deck_id>/delete', methods=['POST'])
-def delete_deck(deck_folder):
-    folders = os.listdir(get_data_dir())
-
-    if deck_folder in folders:
-        deck_path = get_deck_path(deck_folder)
-        shutil.rmtree(deck_path, ignore_errors=True)
-
+def delete_deck(deck_id):
+    if g.storage.delete_deck(deck_id):
         flash('Deck successfully deleted.', 'success')
         return redirect(url_for('index'))
 
-    flash('Failed to delete deck.', 'error')
+    flash('Deck not found.', 'error')
     return redirect(url_for('index'))
 
 @app.route('/decks/<int:deck_id>/new_card')

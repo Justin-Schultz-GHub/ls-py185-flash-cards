@@ -42,6 +42,39 @@ class DatabasePersistence:
 
         return deck_id
 
+    def rename_deck(self, deck_id, new_deck_name):
+        query = '''
+                UPDATE decks
+                SET name = (%s)
+                WHERE id = (%s);
+                '''
+
+        with self._database_connect() as connection:
+            with connection.cursor() as cursor:
+                logger.info(
+                        'Executing query: %s with deck_id: %s and deck_name: (%s)',
+                        query, deck_id, new_deck_name
+                        )
+                cursor.execute(query, (new_deck_name, deck_id,))
+
+                return cursor.rowcount
+
+    def delete_deck(self, deck_id):
+        query = '''
+                DELETE FROM decks
+                WHERE id = (%s);
+                '''
+
+        with self._database_connect() as connection:
+            with connection.cursor() as cursor:
+                logger.info(
+                        'Executing query: %s with deck_id: %s',
+                        query, deck_id
+                        )
+                cursor.execute(query, (deck_id,))
+
+                return cursor.rowcount
+
     def get_all_decks(self):
         query = '''
                 SELECT id, name FROM decks;
