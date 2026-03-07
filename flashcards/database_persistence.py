@@ -9,42 +9,28 @@ logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
 
 class DatabasePersistence:
-    def __init__(self):
+    def __init__(self, dbname=None):
+        self.dbname = dbname or os.environ.get('DATABASE') or 'flashcards'
         self._setup_schema()
 
     def _setup_schema(self):
         with self._database_connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute('''
-                                SELECT COUNT(*)
-                                FROM information_schema.tables
-                                WHERE table_schema = 'public'
-                                    and table_name = 'decks';
-                                ''')
-                if cursor.fetchone()[0] == 0:
-                    cursor.execute('''
-                                    CREATE TABLE decks (
-                                    id serial PRIMARY KEY,
-                                    name TEXT NOT NULL
-                                    );
-                                ''')
-
-                cursor.execute('''
-                                SELECT COUNT(*)
-                                FROM information_schema.tables
-                                WHERE table_schema = 'public'
-                                    and table_name = 'cards';
+                                CREATE TABLE IF NOT EXISTS decks (
+                                id serial PRIMARY KEY,
+                                name TEXT NOT NULL
+                                );
                             ''')
 
-                if cursor.fetchone()[0] == 0:
-                    cursor.execute('''
-                                    CREATE TABLE cards (
-                                    id serial PRIMARY KEY,
-                                    front TEXT NOT NULL,
-                                    back TEXT NOT NULL,
-                                    deck_id INTEGER NOT NULL REFERENCES decks(id) ON DELETE CASCADE
-                                    );
-                                ''')
+                cursor.execute('''
+                                CREATE TABLE IF NOT EXISTS cards (
+                                id serial PRIMARY KEY,
+                                front TEXT NOT NULL,
+                                back TEXT NOT NULL,
+                                deck_id INTEGER NOT NULL REFERENCES decks(id) ON DELETE CASCADE
+                                );
+                            ''')
 
                 cursor.execute('''
                                 CREATE INDEX IF NOT EXISTS idx_cards_deck_id
@@ -56,7 +42,7 @@ class DatabasePersistence:
         if os.environ.get('FLASK_ENV') == 'production':
             connection = psycopg2.connect(os.environ['DATABASE_URL'])
         else:
-            connection = psycopg2.connect(dbname='flashcards')
+            connection = psycopg2.connect(dbname=self.dbname)
 
         try:
             with connection:
@@ -149,6 +135,7 @@ class DatabasePersistence:
         query = '''
                 INSERT INTO cards (front, back, deck_id)
                 values (%s, %s, %s)
+                RETURNING id;
                 '''
 
         with self._database_connect() as connection:
@@ -158,6 +145,9 @@ class DatabasePersistence:
                         query, deck_id
                         )
                 cursor.execute(query, (front, back, deck_id,))
+                card_id = cursor.fetchone()[0]
+
+        return card_id
 
     def get_cards(self, deck_id):
         query = '''

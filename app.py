@@ -1,4 +1,5 @@
 import secrets
+import os
 from flask import (
                     flash,
                     Flask,
@@ -19,11 +20,13 @@ from flashcards.session_persistence import (
                                             )
 
 app = Flask(__name__)
+app.config['DATABASE'] = 'flashcards'
 app.secret_key=secrets.token_hex(32)
 
 @app.before_request
 def initialize_persistence():
-    g.storage = DatabasePersistence()
+    dbname = app.config.get('DATABASE', os.environ.get('DATABASE', 'flashcards'))
+    g.storage = DatabasePersistence(dbname=dbname)
     g.study = SessionPersistence(session)
 
 # Route hooks
